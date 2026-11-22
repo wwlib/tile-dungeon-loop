@@ -1,0 +1,11 @@
+{
+  "name": "tile-dungeon-loop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Tile-based dungeon roguelike in plain Node.js and HTML Canvas",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/*.test.js"
+  }
+}
