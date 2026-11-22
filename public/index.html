@@ -5,11 +5,86 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tile Dungeon</title>
   <style>
-    body { margin: 0; background: #11141a; color: #e6edf3; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
-    canvas { border: 1px solid #30363d; background: #0d1117; image-rendering: pixelated; }
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #f6e05e;
+      --btn: #21262d;
+      --btn-hover: #30363d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 12px;
+      padding: 16px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+    }
+    #hud {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 16px;
+      padding: 10px 14px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 13px;
+      line-height: 1.4;
+      max-width: 800px;
+      width: 100%;
+    }
+    #hud .stat span.label { color: var(--muted); }
+    #hud .stat span.value { color: var(--text); font-weight: 600; }
+    #hud .controls { color: var(--muted); width: 100%; font-size: 11px; }
+    .actions { display: flex; gap: 8px; margin-left: auto; }
+    button {
+      background: var(--btn);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px 10px;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    button:hover { background: var(--btn-hover); }
+    canvas {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      image-rendering: pixelated;
+      max-width: 100%;
+    }
   </style>
 </head>
 <body>
+  <h1>Tile Dungeon</h1>
+  <div id="hud">
+    <div class="stat"><span class="label">seed</span> <span class="value" data-hud="seed">—</span></div>
+    <div class="stat"><span class="label">pos</span> <span class="value" data-hud="pos">—</span></div>
+    <div class="stat"><span class="label">turn</span> <span class="value" data-hud="turn">—</span></div>
+    <div class="actions">
+      <button type="button" id="restart" title="Restart same seed">Restart</button>
+      <button type="button" id="new-seed" title="New random seed">New Seed</button>
+    </div>
+    <div class="controls">Move: Arrow keys / WASD · Wait: Space · Restart: R · New seed: N</div>
+  </div>
   <canvas id="game" width="800" height="600"></canvas>
   <script type="module" src="/src/main.js"></script>
 </body>

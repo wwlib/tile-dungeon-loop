@@ -18,9 +18,23 @@ Guidance for AI coding agents working on `tile-dungeon`.
 - **Project registration:** `.agentfleet.json` sets `"project": "tile-dungeon"`. Note that `aflt <subcmd> --help` is not a dedicated help path in `aflt` — never invoke it.
 - Keep `README.md` and `AGENTS.md` updated as milestones land.
 
+## Current Modules (M1)
+
+| Module | Role |
+| --- | --- |
+| `src/rng.js` | Seeded Mulberry32 PRNG |
+| `src/tiles.js` | `FLOOR` / `WALL` constants, `isWalkable` |
+| `src/map.js` | Arena builder with outer walls + interior pillars |
+| `src/game-state.js` | Pure `createGame` / `movePlayer` / `step` / `inspect` |
+| `src/renderer.js` | Canvas draw + HUD + keyboard helpers |
+| `src/main.js` | Browser entry (Arrow/WASD, Space, R, N) |
+| `test/rng.test.js` | Seed determinism |
+| `test/game-state.test.js` | Movement, collision, bounds, DOM-free import |
+| `test/smoke.test.js` | Static server `/health` + `/` |
+
 ## Milestones
 
-1. **M1:** Grid tile map, canvas rendering, keyboard movement, wall collision, seeded RNG, pure state module, headless tests.
+1. **M1:** ✅ Grid tile map, canvas rendering, keyboard movement, wall collision, seeded RNG, pure state module, headless tests.
 2. **M2:** Seeded procedural dungeon generation (rooms+corridors or BSP), FOV + fog of war, multi-seed connectivity/solvability tests.
 3. **M3:** Monsters with AI, turn-based combat, HP, message log, death and restart, headless tests.
 4. **M4:** Potions, weapons/armor, inventory, stairs to deeper levels, difficulty scaling, headless tests.

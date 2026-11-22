@@ -8,9 +8,20 @@ A browser-playable tile-based dungeon roguelike built with plain Node.js and HTM
 npm start
 ```
 
-Open `http://127.0.0.1:8792` (or `http://<lan-ip>:8792` on the local network).
+Open `http://127.0.0.1:8792` (or `http://<lan-ip>:8792` on the local network). Optional query: `?seed=42`.
 
 > **Port note:** The server binds `0.0.0.0` on port `8792` by default (configurable via `PORT=...`) because ports `8790` and `8791` are already in use on this host (`8791` is the original tile-dungeon baseline).
+
+## Controls (M1)
+
+| Input | Action |
+| --- | --- |
+| Arrow keys / WASD | Move one tile (walls block) |
+| Space | Wait one turn |
+| R or **Restart** | Restart the current seed |
+| N or **New Seed** | Start a new random seed |
+
+HUD shows **seed**, **player position**, **turn**, and the controls summary.
 
 ## Testing
 
@@ -18,22 +29,25 @@ Open `http://127.0.0.1:8792` (or `http://<lan-ip>:8792` on the local network).
 npm test
 ```
 
-Uses Node's built-in `node:test` runner against headless tests in `test/`.
+Uses Node's built-in `node:test` runner against headless tests in `test/` (`smoke`, `rng`, `game-state`).
 
 ## Architecture
 
 - `server.js` — minimal Node HTTP static server (`0.0.0.0`, default port `8792`) serving `public/`, `src/`, and `/health`.
-- `public/index.html` — browser entry point hosting the `<canvas>` and HUD.
+- `public/index.html` — browser entry point hosting the `<canvas>`, HUD, and Restart / New Seed controls.
 - `src/` — native ES modules shared directly between the browser and Node tests:
-  - Pure deterministic RNG and game-state logic (map grid, generation, FOV, entities, combat, inventory, stairs) kept separate from DOM/canvas rendering.
-  - Canvas renderer and keyboard input adapter in the browser entry module(s).
-- `test/` — headless `node:test` suites covering game rules, seed determinism, solvability, combat, items, and evaluation.
-- `scripts/eval/` — headless bot player and deterministic quality/balance evaluator (added in M5).
+  - `rng.js` — seeded Mulberry32 PRNG (`createRng`) with `next` / `nextFloat` / `nextInt` / `range`.
+  - `tiles.js` — tile constants (`FLOOR`, `WALL`) and `isWalkable`.
+  - `map.js` — arena grid builder (`createArenaMap`) plus `getTileAt` / `setTileAt` / `findSpawn`.
+  - `game-state.js` — pure state (`createGame`, `movePlayer`, `step`, `restart`, `inspect`); no DOM.
+  - `renderer.js` — canvas tile drawing and HUD updates; `keyToDelta` / `shouldPreventDefault` helpers.
+  - `main.js` — browser adapter: keyboard / buttons → state and redraw.
+- `test/` — headless `node:test` suites covering seed determinism, movement / collision, and server smoke.
 - `.agentfleet.json` — registers `tile-dungeon` as an `aflt` project (`{"project": "tile-dungeon"}`).
 
 ## Milestone Plan
 
-- **M1 — Core Grid & Movement:** Seeded RNG, pure game-state module separate from rendering, canvas tile map, keyboard movement, wall collision, headless state tests.
+- **M1 — Core Grid & Movement:** ✅ Seeded RNG, pure game-state module separate from rendering, canvas tile map, keyboard movement, wall collision, headless state tests.
 - **M2 — Procedural Dungeon & FOV:** Deterministic rooms-and-corridors or BSP generation, field of view and fog of war, multi-seed solvability/connectivity tests.
 - **M3 — Monsters & Turn-Based Combat:** Monster AI, turn-based melee combat, HP, message log, death and restart, headless combat tests.
 - **M4 — Items, Inventory & Deeper Levels:** Potions, weapons/armor, inventory UI, stairs down, depth-based difficulty scaling, headless progression tests.
