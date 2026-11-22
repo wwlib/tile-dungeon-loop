@@ -1,5 +1,6 @@
 import { TILE, VIS } from './tiles.js';
 import { countExplored } from './fov.js';
+import { describeItem } from './items.js';
 
 const COLORS = {
   unseen: '#0a0c10',
@@ -21,13 +22,18 @@ const COLORS = {
   hpBg: '#1a202c',
   overlay: 'rgba(0, 0, 0, 0.62)',
   overlayText: '#f6e05e',
+  overlayMuted: '#e6edf3',
 };
 
 /**
- * Draw the tile grid, visible monsters, player, overlays, and HUD.
+ * Draw the tile grid, items, visible monsters, player, overlays, and HUD.
  * @param {HTMLCanvasElement} canvas
  * @param {import('./game-state.js').GameState} state
- * @param {{ hud?: HTMLElement | null, log?: HTMLElement | null }} [options]
+ * @param {{
+ *   hud?: HTMLElement | null,
+ *   log?: HTMLElement | null,
+ *   inventory?: HTMLElement | null,
+ * }} [options]
  */
 export function render(canvas, state, options = {}) {
   const ctx = canvas.getContext('2d');
@@ -100,6 +106,18 @@ export function render(canvas, state, options = {}) {
     }
   }
 
+  // Floor items — visible fully; explored as dim glyphs.
+  if (Array.isArray(state.items)) {
+    for (const item of state.items) {
+      if (!item.onFloor) continue;
+      const vis = state.visibility
+        ? state.visibility[item.y * state.width + item.x]
+        : VIS.VISIBLE;
+      if (vis === VIS.UNSEEN) continue;
+      drawItem(ctx, offsetX, offsetY, tileSize, item, vis === VIS.VISIBLE);
+    }
+  }
+
   // Monsters — only while currently in FOV.
   if (state.monsters) {
     for (const monster of state.monsters) {
@@ -123,7 +141,6 @@ export function render(canvas, state, options = {}) {
         my + tileSize / 2 + 1,
       );
 
-      // Tiny HP bar above the glyph.
       const barH = Math.max(2, Math.floor(tileSize * 0.1));
       const barW = tileSize - pad * 2;
       const ratio = monster.maxHp > 0 ? monster.hp / monster.maxHp : 0;
@@ -147,7 +164,6 @@ export function render(canvas, state, options = {}) {
   ctx.fillStyle = COLORS.player;
   ctx.fillRect(ppx + pad, ppy + pad, tileSize - pad * 2, tileSize - pad * 2);
 
-  // Player HP bar under the player glyph.
   if (state.player.maxHp) {
     const barH = Math.max(2, Math.floor(tileSize * 0.12));
     const barW = tileSize - pad * 2;
@@ -172,7 +188,7 @@ export function render(canvas, state, options = {}) {
     ctx.textBaseline = 'middle';
     ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 14);
     ctx.font = '14px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
-    ctx.fillStyle = '#e6edf3';
+    ctx.fillStyle = COLORS.overlayMuted;
     ctx.fillText('Press R or Enter to restart', canvas.width / 2, canvas.height / 2 + 16);
   }
 
@@ -182,6 +198,34 @@ export function render(canvas, state, options = {}) {
   if (options.log) {
     updateLog(options.log, state);
   }
+  if (options.inventory) {
+    updateInventoryPanel(options.inventory, state);
+  }
+}
+
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} offsetX
+ * @param {number} offsetY
+ * @param {number} tileSize
+ * @param {import('./items.js').Item} item
+ * @param {boolean} visible
+ */
+function drawItem(ctx, offsetX, offsetY, tileSize, item, visible) {
+  const px = offsetX + item.x * tileSize;
+  const py = offsetY + item.y * tileSize;
+  const fontSize = Math.max(8, Math.floor(tileSize * 0.62));
+  ctx.font = `bold ${fontSize}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.globalAlpha = visible ? 1 : 0.45;
+  ctx.fillStyle = item.color || '#e2e8f0';
+  ctx.fillText(
+    item.glyph || '?',
+    px + tileSize / 2,
+    py + tileSize / 2 + 1,
+  );
+  ctx.globalAlpha = 1;
 }
 
 /**
@@ -189,15 +233,24 @@ export function render(canvas, state, options = {}) {
  * @param {import('./game-state.js').GameState} state
  */
 export function updateHud(hud, state) {
-  const seedEl = hud.querySelector('[data-hud="seed"]');
-  const posEl = hud.querySelector('[data-hud="pos"]');
-  const turnEl = hud.querySelector('[data-hud="turn"]');
-  const exploredEl = hud.querySelector('[data-hud="explored"]');
-  const hpEl = hud.querySelector('[data-hud="hp"]');
-  const killsEl = hud.querySelector('[data-hud="kills"]');
-  const hpBarFill = hud.querySelector('[data-hud="hp-bar"]');
+  const root =
+    (hud.closest && hud.closest('.layout')) || hud.parentElement || hud;
+  const seedEl = root.querySelector('[data-hud="seed"]');
+  const depthEl = root.querySelector('[data-hud="depth"]');
+  const posEl = root.querySelector('[data-hud="pos"]');
+  const turnEl = root.querySelector('[data-hud="turn"]');
+  const exploredEl = root.querySelector('[data-hud="explored"]');
+  const hpEl = root.querySelector('[data-hud="hp"]');
+  const atkEl = root.querySelector('[data-hud="atk"]');
+  const defEl = root.querySelector('[data-hud="def"]');
+  const weaponEl = root.querySelector('[data-hud="weapon"]');
+  const armorEl = root.querySelector('[data-hud="armor"]');
+  const killsEl = root.querySelector('[data-hud="kills"]');
+  const hpBarFill = root.querySelector('[data-hud="hp-bar"]');
+  const descendBtn = root.querySelector('#descend');
 
   if (seedEl) seedEl.textContent = String(state.seed);
+  if (depthEl) depthEl.textContent = String(state.depth ?? 1);
   if (posEl) posEl.textContent = `${state.player.x}, ${state.player.y}`;
   if (turnEl) turnEl.textContent = String(state.turn);
   if (exploredEl) {
@@ -205,6 +258,18 @@ export function updateHud(hud, state) {
   }
   if (hpEl) {
     hpEl.textContent = `${state.player.hp}/${state.player.maxHp}`;
+  }
+  if (atkEl) atkEl.textContent = String(state.player.attack);
+  if (defEl) defEl.textContent = String(state.player.defense);
+  if (weaponEl) {
+    weaponEl.textContent = state.equipped?.weapon
+      ? describeItem(state.equipped.weapon)
+      : '—';
+  }
+  if (armorEl) {
+    armorEl.textContent = state.equipped?.armor
+      ? describeItem(state.equipped.armor)
+      : '—';
   }
   if (killsEl) killsEl.textContent = String(state.kills ?? 0);
   if (hpBarFill instanceof HTMLElement) {
@@ -215,7 +280,42 @@ export function updateHud(hud, state) {
     hpBarFill.style.width = `${Math.round(ratio * 100)}%`;
     hpBarFill.style.background =
       ratio > 0.35 ? COLORS.hpFull : COLORS.hpLow;
+    hpBarFill.classList.toggle('low', ratio <= 0.35);
   }
+
+  const onStairs =
+    state.player.x === state.stairs.x && state.player.y === state.stairs.y;
+  if (descendBtn instanceof HTMLButtonElement) {
+    descendBtn.disabled = state.gameOver || !onStairs;
+  }
+
+  hud.classList.toggle('game-over', Boolean(state.gameOver));
+  hud.classList.toggle('on-stairs', onStairs && !state.gameOver);
+}
+
+/**
+ * Clickable inventory panel (slots 1–9).
+ * @param {HTMLElement} panel
+ * @param {import('./game-state.js').GameState} state
+ */
+export function updateInventoryPanel(panel, state) {
+  const list = state.inventory ?? [];
+  const rows = [];
+  for (let i = 0; i < 9; i++) {
+    const item = list[i];
+    const label = item ? describeItem(item) : 'empty';
+    const kind = item?.kind ?? 'empty';
+    const disabled = state.gameOver || !item;
+    rows.push(
+      `<button type="button" class="inv-slot" data-inv-index="${i}" data-kind="${kind}" ${
+        disabled ? 'disabled' : ''
+      } title="${item ? `Use / equip slot ${i + 1}` : `Empty slot ${i + 1}`}">` +
+        `<span class="inv-key">${i + 1}</span>` +
+        `<span class="inv-name">${escapeHtml(label)}</span>` +
+        `</button>`,
+    );
+  }
+  panel.innerHTML = rows.join('');
 }
 
 /**
@@ -224,7 +324,6 @@ export function updateHud(hud, state) {
  */
 export function updateLog(logEl, state) {
   const messages = state.messages ?? [];
-  // Show newest last (reading order top→bottom).
   logEl.innerHTML = '';
   const recent = messages.slice(-12);
   for (const msg of recent) {
@@ -234,6 +333,15 @@ export function updateLog(logEl, state) {
     logEl.appendChild(line);
   }
   logEl.scrollTop = logEl.scrollHeight;
+}
+
+/** @param {string} s */
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 /**
@@ -276,6 +384,8 @@ export function shouldPreventDefault(event) {
     event.key === 'ArrowLeft' ||
     event.key === 'ArrowRight' ||
     event.key === ' ' ||
-    event.code === 'Space'
+    event.code === 'Space' ||
+    event.key === '>' ||
+    event.key === '.'
   );
 }

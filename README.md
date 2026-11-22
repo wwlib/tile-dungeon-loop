@@ -12,16 +12,22 @@ Open `http://127.0.0.1:8792` (or `http://<lan-ip>:8792` on the local network). O
 
 > **Port note:** The server binds `0.0.0.0` on port `8792` by default (configurable via `PORT=...`) because ports `8790` and `8791` are already in use on this host (`8791` is the original tile-dungeon baseline).
 
-## Controls (M3)
+## Controls (M4)
 
 | Input | Action |
 | --- | --- |
-| Arrow keys / WASD | Move one tile (walls block; bump a monster to attack) |
+| Arrow keys / WASD | Move one tile (walls block; bump a monster to attack; auto-pick up items) |
 | Space | Wait one turn (monsters still act) |
-| R / Enter or **Restart** | Restart the current seed |
+| 1–9 | Use / equip inventory slot (drink potion or equip weapon/armor) |
+| H | Drink the best healing potion in inventory |
+| G | Pick up an item underfoot (if inventory was full earlier) |
+| `>` / Enter on stairs or **Descend** | Go down to the next depth |
+| R or **Restart** | Restart the current seed at depth 1 |
 | N or **New Seed** | Start a new random seed |
 
-HUD shows **seed**, **HP** (with bar), **player position**, **turn**, **kills**, **explored** tile count, and controls. A message log under the canvas records combat and death. Unseen tiles are hidden; explored tiles are dim; currently visible tiles are bright. Monsters render only while in FOV (with tiny HP bars). Stairs appear as a blue `>` when seen. On death, a Game Over overlay appears and actions freeze until restart.
+HUD shows **seed**, **depth**, **HP** (with bar), **ATK**, **DEF**, **player position**, **turn**, **kills**, and **explored** tile count. The sidebar lists **equipped weapon/armor** and a clickable **inventory** (slots 1–9). A message log under the canvas records combat, loot, descent, and death. Unseen tiles are hidden; explored tiles are dim; currently visible tiles are bright. Monsters render only while in FOV (with tiny HP bars). Items show as glyphs when seen (faint on explored). Stairs appear as a blue `>` when seen. On death, a Game Over overlay appears and actions freeze until restart.
+
+Deeper floors scale monster count/strength and unlock higher-tier potions, weapons, and armor. Descending preserves HP, inventory, equipment, kills, and turn count.
 
 ## Testing
 
@@ -29,23 +35,24 @@ HUD shows **seed**, **HP** (with bar), **player position**, **turn**, **kills**,
 npm test
 ```
 
-Uses Node's built-in `node:test` runner against headless tests in `test/` (`smoke`, `rng`, `game-state`, `dungeon`, `fov`, `combat`).
+Uses Node's built-in `node:test` runner against headless tests in `test/` (`smoke`, `rng`, `game-state`, `dungeon`, `fov`, `combat`, `items`).
 
 ## Architecture
 
 - `server.js` — minimal Node HTTP static server (`0.0.0.0`, default port `8792`) serving `public/`, `src/`, and `/health`.
-- `public/index.html` — browser entry point hosting the `<canvas>`, HUD, message log, and Restart / New Seed controls.
+- `public/index.html` — browser entry point hosting the `<canvas>`, HUD, inventory sidebar, Descend / Restart / New Seed controls, and message log.
 - `src/` — native ES modules shared directly between the browser and Node tests:
   - `rng.js` — seeded Mulberry32 PRNG (`createRng`) with `next` / `nextFloat` / `nextInt` / `range`.
-  - `tiles.js` — tile constants (`FLOOR`, `WALL`, `STAIRS`), visibility (`VIS`), `isWalkable` / `blocksSight`.
+  - `tiles.js` — tile constants (`FLOOR` / `WALL` / `STAIRS`), visibility (`VIS`), `isWalkable` / `blocksSight`.
   - `map.js` — arena grid builder (`createArenaMap`) plus `getTileAt` / `setTileAt` / `findSpawn`.
   - `dungeon.js` — seeded rooms-and-corridors generator with spawn, stairs, corridor carving, and BFS connectivity repair.
   - `fov.js` — recursive shadowcasting FOV, fog-of-war apply/update, explored count, Bresenham LOS.
-  - `monsters.js` — archetypes (Goblin / Slime / Bat / Orc), seeded room spawning, chase / wander AI.
-  - `game-state.js` — pure state (`createGame`, `movePlayer`, `step`, `restart`, `inspect`); dungeon + FOV + combat + HP + message log; no DOM.
-  - `renderer.js` — canvas tile drawing with FOV shading, visible monsters, HP bars, Game Over overlay, HUD / log updates.
-  - `main.js` — browser adapter: keyboard / buttons → state and redraw.
-- `test/` — headless `node:test` suites covering seed determinism, dungeon connectivity, FOV/fog, movement, combat/AI, and server smoke.
+  - `monsters.js` — archetypes (Goblin / Slime / Bat / Orc), depth-scaled spawning, chase / wander AI.
+  - `items.js` — potion / weapon / armor templates, seeded floor loot, inventory helpers, `floorSeed(run, depth)`.
+  - `game-state.js` — pure state (`createGame`, `movePlayer`, `useItem`, `descendStairs`, `restart`, `inspect`); dungeon + FOV + combat + inventory + depth; no DOM.
+  - `renderer.js` — canvas tile drawing with FOV shading, items, visible monsters, HP bars, Game Over overlay, HUD / inventory / log updates.
+  - `main.js` — browser adapter: keyboard / inventory clicks / Descend / Restart / New Seed → state and redraw.
+- `test/` — headless `node:test` suites covering seed determinism, dungeon connectivity, FOV/fog, movement, combat/AI, items/progression, and server smoke.
 - `.agentfleet.json` — registers `tile-dungeon` as an `aflt` project (`{"project": "tile-dungeon"}`).
 
 ## Milestone Plan
@@ -53,5 +60,5 @@ Uses Node's built-in `node:test` runner against headless tests in `test/` (`smok
 - **M1 — Core Grid & Movement:** ✅ Seeded RNG, pure game-state module separate from rendering, canvas tile map, keyboard movement, wall collision, headless state tests.
 - **M2 — Procedural Dungeon & FOV:** ✅ Deterministic rooms-and-corridors generation, field of view and fog of war, multi-seed solvability/connectivity tests.
 - **M3 — Monsters & Turn-Based Combat:** ✅ Monster AI, turn-based melee combat, HP, message log, death and restart, headless combat tests.
-- **M4 — Items, Inventory & Deeper Levels:** Potions, weapons/armor, inventory UI, stairs down, depth-based difficulty scaling, headless progression tests.
+- **M4 — Items, Inventory & Deeper Levels:** ✅ Potions, weapons/armor, inventory UI, stairs down, depth-based difficulty scaling, headless progression tests.
 - **M5 — Headless Bot & Eval Loop:** `scripts/eval/` bot playing N seeded runs, scoring crash-free rate, solvability, average depth, turns survived, and balance sanity, followed by autonomous improvement rounds until score plateau.

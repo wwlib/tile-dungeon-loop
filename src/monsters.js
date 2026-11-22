@@ -1,6 +1,6 @@
 /**
  * Monster archetypes, seeded spawning, and simple chase / wander AI.
- * Pure module — no DOM.
+ * Pure module — no DOM. Depth scales pack density and combat stats.
  */
 
 import { isWalkable } from './tiles.js';
@@ -95,6 +95,17 @@ const SPAWN_TABLE = Object.freeze([
   'orc',
 ]);
 
+/** Depth-weighted table: bats/slimes fade; goblins/orcs grow. */
+const DEEP_SPAWN_TABLE = Object.freeze([
+  'bat',
+  'slime',
+  'goblin',
+  'goblin',
+  'goblin',
+  'orc',
+  'orc',
+]);
+
 const CARDINAL = Object.freeze([
   [0, -1],
   [0, 1],
@@ -103,13 +114,49 @@ const CARDINAL = Object.freeze([
 ]);
 
 /**
+ * Depth scaling applied on top of archetype base stats.
+ * Depth 1 ≈ base; each deeper floor bumps HP / attack gently.
+ * @param {number} depth
+ * @returns {{ hpBonus: number, attackBonus: number, defenseBonus: number }}
+ */
+export function depthStatBonuses(depth) {
+  const d = Math.max(1, Math.floor(Number(depth) || 1));
+  const steps = d - 1;
+  return {
+    hpBonus: steps * 2,
+    attackBonus: Math.floor(steps / 2),
+    defenseBonus: Math.floor(steps / 3),
+  };
+}
+
+/**
+ * Spawn density / packing for a depth (deeper → more monsters).
+ * Depth 1 keeps the M3 integer-density feel (density 1 → up to 2/room).
+ * @param {number} depth
+ * @returns {{ density: number, maxPerRoom: number }}
+ */
+export function spawnParamsForDepth(depth) {
+  const d = Math.max(1, Math.floor(Number(depth) || 1));
+  if (d === 1) return { density: 1, maxPerRoom: 2 };
+  return {
+    density: Math.min(5, d),
+    maxPerRoom: d >= 3 ? 3 : 2,
+  };
+}
+
+/**
  * @param {MonsterArchetype} arch
  * @param {number} x
  * @param {number} y
  * @param {number} id
+ * @param {number} [depth=1]
  * @returns {Monster}
  */
-export function createMonster(arch, x, y, id) {
+export function createMonster(arch, x, y, id, depth = 1) {
+  const bonus = depthStatBonuses(depth);
+  const maxHp = arch.maxHp + bonus.hpBonus;
+  const attack = arch.attack + bonus.attackBonus;
+  const defense = arch.defense + bonus.defenseBonus;
   return {
     id,
     kind: arch.id,
@@ -118,11 +165,11 @@ export function createMonster(arch, x, y, id) {
     color: arch.color,
     x,
     y,
-    maxHp: arch.maxHp,
-    hp: arch.maxHp,
-    attack: arch.attack,
-    defense: arch.defense,
-    xp: arch.xp,
+    maxHp,
+    hp: maxHp,
+    attack,
+    defense,
+    xp: arch.xp + (Math.max(1, Math.floor(Number(depth) || 1)) - 1),
     aggroRange: arch.aggroRange,
     alive: true,
   };
@@ -131,6 +178,7 @@ export function createMonster(arch, x, y, id) {
 /**
  * Seeded monster placement in rooms other than the spawn room.
  * Never overlaps walls, stairs, the player, or another monster.
+ * Depth scales pack size and combat stats.
  *
  * @param {{
  *   width: number,
@@ -139,13 +187,17 @@ export function createMonster(arch, x, y, id) {
  *   rooms: { x: number, y: number, w: number, h: number }[],
  *   player: { x: number, y: number },
  *   stairs: { x: number, y: number },
+ *   depth?: number,
  *   rng: { nextInt: (n: number) => number, range: (a: number, b: number) => number },
  * }} state
- * @param {{ density?: number }} [options]
+ * @param {{ density?: number, maxPerRoom?: number, depth?: number }} [options]
  * @returns {Monster[]}
  */
 export function spawnMonsters(state, options = {}) {
-  const density = options.density ?? 1;
+  const depth = Math.max(1, Math.floor(options.depth ?? state.depth ?? 1));
+  const defaults = spawnParamsForDepth(depth);
+  const density = options.density ?? defaults.density;
+  const maxPerRoom = options.maxPerRoom ?? defaults.maxPerRoom;
   /** @type {Monster[]} */
   const monsters = [];
   const occupied = new Set([
@@ -153,18 +205,22 @@ export function spawnMonsters(state, options = {}) {
     `${state.stairs.x},${state.stairs.y}`,
   ]);
 
+  const table = depth >= 3 ? DEEP_SPAWN_TABLE : SPAWN_TABLE;
   const rooms = state.rooms ?? [];
   // Skip rooms[0] — player spawn room.
   for (let ri = 1; ri < rooms.length; ri++) {
     const room = rooms[ri];
-    const count = Math.max(0, state.rng.range(0, Math.min(2, density + 1)));
+    const upper = Math.max(1, Math.min(maxPerRoom, density + (depth > 1 ? 1 : 0)));
+    // Depth 1 may leave rooms empty (range from 0); deeper floors always place ≥1.
+    const lower = depth >= 3 ? 1 : 0;
+    const count = Math.max(0, state.rng.range(lower, upper));
     for (let n = 0; n < count; n++) {
       const candidates = floorTilesInRoom(state, room, occupied);
       if (candidates.length === 0) break;
       const pick = candidates[state.rng.nextInt(candidates.length)];
-      const kind = SPAWN_TABLE[state.rng.nextInt(SPAWN_TABLE.length)];
+      const kind = table[state.rng.nextInt(table.length)];
       const arch = ARCHETYPES[kind];
-      const monster = createMonster(arch, pick.x, pick.y, monsters.length + 1);
+      const monster = createMonster(arch, pick.x, pick.y, monsters.length + 1, depth);
       monsters.push(monster);
       occupied.add(`${pick.x},${pick.y}`);
     }
@@ -273,7 +329,6 @@ export function chooseChaseStep(state, monster) {
     if (canMonsterOccupy(state, nx, ny, monster)) return step;
   }
 
-  // Try remaining cardinals that do not increase distance.
   const curDist = manhattan(monster, state.player);
   for (const [cx, cy] of CARDINAL) {
     if (preferred.some((p) => p.dx === cx && p.dy === cy)) continue;
@@ -297,7 +352,6 @@ export function chooseChaseStep(state, monster) {
 export function chooseWanderStep(state, monster, chance = 0.25) {
   if (state.rng.nextFloat() >= chance) return null;
   const order = CARDINAL.slice();
-  // Deterministic shuffle via RNG.
   for (let i = order.length - 1; i > 0; i--) {
     const j = state.rng.nextInt(i + 1);
     const tmp = order[i];
