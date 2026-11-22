@@ -12,7 +12,7 @@ Open `http://127.0.0.1:8792` (or `http://<lan-ip>:8792` on the local network). O
 
 > **Port note:** The server binds `0.0.0.0` on port `8792` by default (configurable via `PORT=...`) because ports `8790` and `8791` are already in use on this host (`8791` is the original tile-dungeon baseline).
 
-## Controls (M1)
+## Controls (M2)
 
 | Input | Action |
 | --- | --- |
@@ -21,7 +21,7 @@ Open `http://127.0.0.1:8792` (or `http://<lan-ip>:8792` on the local network). O
 | R or **Restart** | Restart the current seed |
 | N or **New Seed** | Start a new random seed |
 
-HUD shows **seed**, **player position**, **turn**, and the controls summary.
+HUD shows **seed**, **player position**, **turn**, **explored** tile count, and the controls summary. Unseen tiles are hidden; explored tiles are dim; currently visible tiles are bright. Stairs appear as a blue `>` when seen.
 
 ## Testing
 
@@ -29,7 +29,7 @@ HUD shows **seed**, **player position**, **turn**, and the controls summary.
 npm test
 ```
 
-Uses Node's built-in `node:test` runner against headless tests in `test/` (`smoke`, `rng`, `game-state`).
+Uses Node's built-in `node:test` runner against headless tests in `test/` (`smoke`, `rng`, `game-state`, `dungeon`, `fov`).
 
 ## Architecture
 
@@ -37,18 +37,20 @@ Uses Node's built-in `node:test` runner against headless tests in `test/` (`smok
 - `public/index.html` — browser entry point hosting the `<canvas>`, HUD, and Restart / New Seed controls.
 - `src/` — native ES modules shared directly between the browser and Node tests:
   - `rng.js` — seeded Mulberry32 PRNG (`createRng`) with `next` / `nextFloat` / `nextInt` / `range`.
-  - `tiles.js` — tile constants (`FLOOR`, `WALL`) and `isWalkable`.
+  - `tiles.js` — tile constants (`FLOOR`, `WALL`, `STAIRS`), visibility (`VIS`), `isWalkable` / `blocksSight`.
   - `map.js` — arena grid builder (`createArenaMap`) plus `getTileAt` / `setTileAt` / `findSpawn`.
-  - `game-state.js` — pure state (`createGame`, `movePlayer`, `step`, `restart`, `inspect`); no DOM.
-  - `renderer.js` — canvas tile drawing and HUD updates; `keyToDelta` / `shouldPreventDefault` helpers.
+  - `dungeon.js` — seeded rooms-and-corridors generator with spawn, stairs, corridor carving, and BFS connectivity repair.
+  - `fov.js` — recursive shadowcasting FOV, fog-of-war apply/update, explored count, Bresenham LOS.
+  - `game-state.js` — pure state (`createGame`, `movePlayer`, `step`, `restart`, `inspect`); dungeon + FOV; no DOM.
+  - `renderer.js` — canvas tile drawing with unseen/explored/visible shading, stairs glyph, HUD updates.
   - `main.js` — browser adapter: keyboard / buttons → state and redraw.
-- `test/` — headless `node:test` suites covering seed determinism, movement / collision, and server smoke.
+- `test/` — headless `node:test` suites covering seed determinism, dungeon connectivity, FOV/fog, movement, and server smoke.
 - `.agentfleet.json` — registers `tile-dungeon` as an `aflt` project (`{"project": "tile-dungeon"}`).
 
 ## Milestone Plan
 
 - **M1 — Core Grid & Movement:** ✅ Seeded RNG, pure game-state module separate from rendering, canvas tile map, keyboard movement, wall collision, headless state tests.
-- **M2 — Procedural Dungeon & FOV:** Deterministic rooms-and-corridors or BSP generation, field of view and fog of war, multi-seed solvability/connectivity tests.
+- **M2 — Procedural Dungeon & FOV:** ✅ Deterministic rooms-and-corridors generation, field of view and fog of war, multi-seed solvability/connectivity tests.
 - **M3 — Monsters & Turn-Based Combat:** Monster AI, turn-based melee combat, HP, message log, death and restart, headless combat tests.
 - **M4 — Items, Inventory & Deeper Levels:** Potions, weapons/armor, inventory UI, stairs down, depth-based difficulty scaling, headless progression tests.
 - **M5 — Headless Bot & Eval Loop:** `scripts/eval/` bot playing N seeded runs, scoring crash-free rate, solvability, average depth, turns survived, and balance sanity, followed by autonomous improvement rounds until score plateau.

@@ -1,10 +1,18 @@
-import { TILE } from './tiles.js';
+import { TILE, VIS } from './tiles.js';
+import { countExplored } from './fov.js';
 
 const COLORS = {
-  floor: '#1a2332',
-  floorAlt: '#16202c',
-  wall: '#4a5568',
-  wallEdge: '#2d3748',
+  unseen: '#0a0c10',
+  floorVisible: '#1a2332',
+  floorVisibleAlt: '#16202c',
+  floorExplored: '#0f1419',
+  floorExploredAlt: '#0c1014',
+  wallVisible: '#4a5568',
+  wallVisibleEdge: '#2d3748',
+  wallExplored: '#2a3038',
+  wallExploredEdge: '#1a1f26',
+  stairsVisible: '#63b3ed',
+  stairsExplored: '#2b6cb0',
   player: '#f6e05e',
   playerOutline: '#744210',
   grid: '#0d1117',
@@ -31,17 +39,57 @@ export function render(canvas, state, options = {}) {
 
   for (let y = 0; y < state.height; y++) {
     for (let x = 0; x < state.width; x++) {
-      const tile = state.tiles[y * state.width + x];
+      const vis = state.visibility
+        ? state.visibility[y * state.width + x]
+        : VIS.VISIBLE;
       const px = offsetX + x * tileSize;
       const py = offsetY + y * tileSize;
 
-      if (tile === TILE.WALL) {
-        ctx.fillStyle = COLORS.wall;
+      if (vis === VIS.UNSEEN) {
+        ctx.fillStyle = COLORS.unseen;
         ctx.fillRect(px, py, tileSize, tileSize);
-        ctx.fillStyle = COLORS.wallEdge;
+        continue;
+      }
+
+      const tile = state.tiles[y * state.width + x];
+      const visible = vis === VIS.VISIBLE;
+
+      if (tile === TILE.WALL) {
+        ctx.fillStyle = visible ? COLORS.wallVisible : COLORS.wallExplored;
+        ctx.fillRect(px, py, tileSize, tileSize);
+        ctx.fillStyle = visible ? COLORS.wallVisibleEdge : COLORS.wallExploredEdge;
         ctx.fillRect(px, py, tileSize, Math.max(1, Math.floor(tileSize * 0.15)));
+      } else if (tile === TILE.STAIRS) {
+        ctx.fillStyle = visible
+          ? (x + y) % 2 === 0
+            ? COLORS.floorVisible
+            : COLORS.floorVisibleAlt
+          : (x + y) % 2 === 0
+            ? COLORS.floorExplored
+            : COLORS.floorExploredAlt;
+        ctx.fillRect(px, py, tileSize, tileSize);
+        const pad = Math.max(1, Math.floor(tileSize * 0.22));
+        ctx.fillStyle = visible ? COLORS.stairsVisible : COLORS.stairsExplored;
+        ctx.fillRect(px + pad, py + pad, tileSize - pad * 2, tileSize - pad * 2);
+        ctx.strokeStyle = visible ? '#ebf8ff' : '#2c5282';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(px + pad, py + tileSize - pad);
+        ctx.lineTo(px + tileSize - pad, py + pad);
+        ctx.stroke();
+        ctx.fillStyle = visible ? '#ebf8ff' : '#63b3ed';
+        ctx.font = `bold ${Math.max(8, Math.floor(tileSize * 0.45))}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('>', px + tileSize / 2, py + tileSize / 2);
       } else {
-        ctx.fillStyle = (x + y) % 2 === 0 ? COLORS.floor : COLORS.floorAlt;
+        ctx.fillStyle = visible
+          ? (x + y) % 2 === 0
+            ? COLORS.floorVisible
+            : COLORS.floorVisibleAlt
+          : (x + y) % 2 === 0
+            ? COLORS.floorExplored
+            : COLORS.floorExploredAlt;
         ctx.fillRect(px, py, tileSize, tileSize);
       }
     }
@@ -73,10 +121,14 @@ export function updateHud(hud, state) {
   const seedEl = hud.querySelector('[data-hud="seed"]');
   const posEl = hud.querySelector('[data-hud="pos"]');
   const turnEl = hud.querySelector('[data-hud="turn"]');
+  const exploredEl = hud.querySelector('[data-hud="explored"]');
 
   if (seedEl) seedEl.textContent = String(state.seed);
   if (posEl) posEl.textContent = `${state.player.x}, ${state.player.y}`;
   if (turnEl) turnEl.textContent = String(state.turn);
+  if (exploredEl) {
+    exploredEl.textContent = String(countExplored(state.visibility));
+  }
 }
 
 /**

@@ -55,6 +55,8 @@ test('createGame places player on walkable tile and exposes inspect helpers', ()
   assert.equal(state.seed, 42);
   assert.equal(state.turn, 0);
   assert.ok(isWalkable(getTile(state, state.player.x, state.player.y)));
+  assert.equal(getTile(state, state.stairs.x, state.stairs.y), TILE.STAIRS);
+  assert.ok(state.visibility instanceof Uint8Array);
   const info = inspect(state);
   assert.equal(info.player.x, state.player.x);
   assert.equal(info.player.y, state.player.y);
@@ -62,6 +64,9 @@ test('createGame places player on walkable tile and exposes inspect helpers', ()
   assert.equal(info.seed, 42);
   assert.equal(info.width, state.width);
   assert.equal(info.height, state.height);
+  assert.equal(info.stairs.x, state.stairs.x);
+  assert.equal(info.stairs.y, state.stairs.y);
+  assert.ok(info.explored > 0);
 });
 
 test('player moves in all four cardinal directions', () => {
