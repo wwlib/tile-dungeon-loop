@@ -35,7 +35,19 @@ Deeper floors scale monster count/strength and unlock higher-tier potions, weapo
 npm test
 ```
 
-Uses Node's built-in `node:test` runner against headless tests in `test/` (`smoke`, `rng`, `game-state`, `dungeon`, `fov`, `combat`, `items`).
+Uses Node's built-in `node:test` runner against headless tests in `test/` (`smoke`, `rng`, `game-state`, `dungeon`, `fov`, `combat`, `items`, `eval`).
+
+## Headless Eval (M5a)
+
+```bash
+npm run eval
+# equivalent: node scripts/eval/eval.js --json
+node scripts/eval/eval.js --json --seeds 20 --write
+```
+
+- `scripts/eval/bot.js` — deterministic headless bot (BFS explore, combat, heal, equip, descend).
+- `scripts/eval/scorer.js` — pure 0–100 metrics (`crash_free`, `solvability`, `avg_depth`, `turns_survived`, `balance_sanity`) and weighted overall.
+- `scripts/eval/eval.js` — CLI runner (default seeds `1..20`); `--write` saves `eval/latest-score.json` and appends `eval/history.jsonl`.
 
 ## Architecture
 
@@ -52,7 +64,8 @@ Uses Node's built-in `node:test` runner against headless tests in `test/` (`smok
   - `game-state.js` — pure state (`createGame`, `movePlayer`, `useItem`, `descendStairs`, `restart`, `inspect`); dungeon + FOV + combat + inventory + depth; no DOM.
   - `renderer.js` — canvas tile drawing with FOV shading, items, visible monsters, HP bars, Game Over overlay, HUD / inventory / log updates.
   - `main.js` — browser adapter: keyboard / inventory clicks / Descend / Restart / New Seed → state and redraw.
-- `test/` — headless `node:test` suites covering seed determinism, dungeon connectivity, FOV/fog, movement, combat/AI, items/progression, and server smoke.
+- `scripts/eval/` — headless bot (`bot.js`), pure scorer (`scorer.js`), and CLI runner (`eval.js`) for M5 balance/eval loops.
+- `test/` — headless `node:test` suites covering seed determinism, dungeon connectivity, FOV/fog, movement, combat/AI, items/progression, eval harness, and server smoke.
 - `.agentfleet.json` — registers `tile-dungeon` as an `aflt` project (`{"project": "tile-dungeon"}`).
 
 ## Milestone Plan
@@ -61,4 +74,4 @@ Uses Node's built-in `node:test` runner against headless tests in `test/` (`smok
 - **M2 — Procedural Dungeon & FOV:** ✅ Deterministic rooms-and-corridors generation, field of view and fog of war, multi-seed solvability/connectivity tests.
 - **M3 — Monsters & Turn-Based Combat:** ✅ Monster AI, turn-based melee combat, HP, message log, death and restart, headless combat tests.
 - **M4 — Items, Inventory & Deeper Levels:** ✅ Potions, weapons/armor, inventory UI, stairs down, depth-based difficulty scaling, headless progression tests.
-- **M5 — Headless Bot & Eval Loop:** `scripts/eval/` bot playing N seeded runs, scoring crash-free rate, solvability, average depth, turns survived, and balance sanity, followed by autonomous improvement rounds until score plateau.
+- **M5 — Headless Bot & Eval Loop:** ✅ M5a harness (`scripts/eval/` bot + scorer + CLI, `npm run eval`, headless `test/eval.test.js`); remaining: iterative balance/gameplay improvement rounds until score plateau.

@@ -18,7 +18,7 @@ Guidance for AI coding agents working on `tile-dungeon`.
 - **Project registration:** `.agentfleet.json` sets `"project": "tile-dungeon"`. Note that `aflt <subcmd> --help` is not a dedicated help path in `aflt` — never invoke it.
 - Keep `README.md` and `AGENTS.md` updated as milestones land.
 
-## Current Modules (M4)
+## Current Modules (M5a)
 
 | Module | Role |
 | --- | --- |
@@ -32,13 +32,23 @@ Guidance for AI coding agents working on `tile-dungeon`.
 | `src/game-state.js` | Pure `createGame` / `movePlayer` / `useItem` / `descendStairs` / `restart` / `inspect`; FOV + combat + inventory + depth |
 | `src/renderer.js` | Canvas draw: FOV shading, items, visible monsters + HP bars, Game Over overlay, HUD / inventory / log |
 | `src/main.js` | Browser entry (Arrow/WASD, Space, 1–9, H, G, `>`/Enter descend, R, N) |
+| `scripts/eval/bot.js` | Deterministic headless bot — BFS explore, fight, heal, equip, descend; per-run telemetry |
+| `scripts/eval/scorer.js` | Pure scoring formulas (weights / normalization constants); no I/O |
+| `scripts/eval/eval.js` | CLI runner (`--json`, `--seeds N`, `--write` → `eval/latest-score.json` + `eval/history.jsonl`) |
 | `test/rng.test.js` | Seed determinism |
 | `test/game-state.test.js` | Movement, collision, bounds, DOM-free import |
 | `test/dungeon.test.js` | Determinism + 50-seed spawn/stairs/connectivity/solvability |
 | `test/fov.test.js` | Wall occlusion, fog memory, createGame FOV init |
 | `test/combat.test.js` | Monster spawn, bump combat, AI chase, message log, death, restart |
 | `test/items.test.js` | Item spawn/pickup/potion/equip, stairs descent + preserve, depth difficulty scaling |
+| `test/eval.test.js` | Bot seeded runs + scorer/eval 0–100 metric bounds (fast, 3 seeds) |
 | `test/smoke.test.js` | Static server `/health` + `/` |
+
+## Eval Commands
+
+- `npm run eval` → `node scripts/eval/eval.js --json` (default seeds `1..20`).
+- `node scripts/eval/eval.js --json --write` — also writes `eval/latest-score.json` and appends `eval/history.jsonl`.
+- Never weaken tests or eval scorers to raise scores during improvement rounds.
 
 ## Milestones
 
@@ -46,4 +56,4 @@ Guidance for AI coding agents working on `tile-dungeon`.
 2. **M2:** ✅ Seeded procedural dungeon generation (rooms+corridors or BSP), FOV + fog of war, multi-seed connectivity/solvability tests.
 3. **M3:** ✅ Monsters with AI, turn-based combat, HP, message log, death and restart, headless tests.
 4. **M4:** ✅ Potions, weapons/armor, inventory, stairs to deeper levels, difficulty scaling, headless tests.
-5. **M5:** `scripts/eval/` headless bot + scorer (crash-free, solvability, average depth, turns survived, balance sanity) + iterative balance/gameplay improvement loop.
+5. **M5:** ✅ M5a — `scripts/eval/` headless bot + scorer (crash-free, solvability, average depth, turns survived, balance sanity); remaining — iterative balance/gameplay improvement loop.

@@ -6,6 +6,7 @@
   "description": "Tile-based dungeon roguelike in plain Node.js and HTML Canvas",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "eval": "node scripts/eval/eval.js --json"
   }
 }
