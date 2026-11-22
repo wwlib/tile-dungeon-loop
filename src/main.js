@@ -32,6 +32,7 @@ function randomSeed() {
 
 const canvas = document.getElementById('game');
 const hud = document.getElementById('hud');
+const logEl = document.getElementById('message-log');
 const newSeedBtn = document.getElementById('new-seed');
 const restartBtn = document.getElementById('restart');
 
@@ -43,7 +44,7 @@ let state = createGame(readSeedFromUrl());
 writeSeedToUrl(state.seed);
 
 function redraw() {
-  render(canvas, state, { hud });
+  render(canvas, state, { hud, log: logEl });
 }
 
 function startWithSeed(seed) {
@@ -65,7 +66,12 @@ function onKeyDown(event) {
 
   const noMod = !event.metaKey && !event.ctrlKey && !event.altKey;
 
-  if (noMod && (event.key === 'r' || event.key === 'R')) {
+  if (
+    noMod &&
+    (event.key === 'r' ||
+      event.key === 'R' ||
+      (state.gameOver && event.key === 'Enter'))
+  ) {
     restartSameSeed();
     return;
   }
@@ -74,6 +80,8 @@ function onKeyDown(event) {
     startWithSeed(randomSeed());
     return;
   }
+
+  if (state.gameOver) return;
 
   const delta = keyToDelta(event);
   if (delta) {

@@ -16,13 +16,18 @@ const COLORS = {
   player: '#f6e05e',
   playerOutline: '#744210',
   grid: '#0d1117',
+  hpFull: '#48bb78',
+  hpLow: '#e53e3e',
+  hpBg: '#1a202c',
+  overlay: 'rgba(0, 0, 0, 0.62)',
+  overlayText: '#f6e05e',
 };
 
 /**
- * Draw the tile grid and player onto an HTML5 canvas.
+ * Draw the tile grid, visible monsters, player, overlays, and HUD.
  * @param {HTMLCanvasElement} canvas
  * @param {import('./game-state.js').GameState} state
- * @param {{ hud?: HTMLElement | null }} [options]
+ * @param {{ hud?: HTMLElement | null, log?: HTMLElement | null }} [options]
  */
 export function render(canvas, state, options = {}) {
   const ctx = canvas.getContext('2d');
@@ -95,6 +100,40 @@ export function render(canvas, state, options = {}) {
     }
   }
 
+  // Monsters — only while currently in FOV.
+  if (state.monsters) {
+    for (const monster of state.monsters) {
+      if (!monster.alive) continue;
+      const vis = state.visibility
+        ? state.visibility[monster.y * state.width + monster.x]
+        : VIS.VISIBLE;
+      if (vis !== VIS.VISIBLE) continue;
+
+      const mx = offsetX + monster.x * tileSize;
+      const my = offsetY + monster.y * tileSize;
+      const pad = Math.max(1, Math.floor(tileSize * 0.18));
+
+      ctx.fillStyle = monster.color || '#fc8181';
+      ctx.font = `bold ${Math.max(10, Math.floor(tileSize * 0.55))}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(
+        monster.symbol || '?',
+        mx + tileSize / 2,
+        my + tileSize / 2 + 1,
+      );
+
+      // Tiny HP bar above the glyph.
+      const barH = Math.max(2, Math.floor(tileSize * 0.1));
+      const barW = tileSize - pad * 2;
+      const ratio = monster.maxHp > 0 ? monster.hp / monster.maxHp : 0;
+      ctx.fillStyle = COLORS.hpBg;
+      ctx.fillRect(mx + pad, my + 1, barW, barH);
+      ctx.fillStyle = ratio > 0.35 ? COLORS.hpFull : COLORS.hpLow;
+      ctx.fillRect(mx + pad, my + 1, Math.max(0, Math.floor(barW * ratio)), barH);
+    }
+  }
+
   const ppx = offsetX + state.player.x * tileSize;
   const ppy = offsetY + state.player.y * tileSize;
   const pad = Math.max(1, Math.floor(tileSize * 0.18));
@@ -108,8 +147,40 @@ export function render(canvas, state, options = {}) {
   ctx.fillStyle = COLORS.player;
   ctx.fillRect(ppx + pad, ppy + pad, tileSize - pad * 2, tileSize - pad * 2);
 
+  // Player HP bar under the player glyph.
+  if (state.player.maxHp) {
+    const barH = Math.max(2, Math.floor(tileSize * 0.12));
+    const barW = tileSize - pad * 2;
+    const ratio = state.player.hp / state.player.maxHp;
+    ctx.fillStyle = COLORS.hpBg;
+    ctx.fillRect(ppx + pad, ppy + tileSize - barH - 1, barW, barH);
+    ctx.fillStyle = ratio > 0.35 ? COLORS.hpFull : COLORS.hpLow;
+    ctx.fillRect(
+      ppx + pad,
+      ppy + tileSize - barH - 1,
+      Math.max(0, Math.floor(barW * ratio)),
+      barH,
+    );
+  }
+
+  if (state.gameOver) {
+    ctx.fillStyle = COLORS.overlay;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = COLORS.overlayText;
+    ctx.font = 'bold 28px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 14);
+    ctx.font = '14px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+    ctx.fillStyle = '#e6edf3';
+    ctx.fillText('Press R or Enter to restart', canvas.width / 2, canvas.height / 2 + 16);
+  }
+
   if (options.hud) {
     updateHud(options.hud, state);
+  }
+  if (options.log) {
+    updateLog(options.log, state);
   }
 }
 
@@ -122,6 +193,9 @@ export function updateHud(hud, state) {
   const posEl = hud.querySelector('[data-hud="pos"]');
   const turnEl = hud.querySelector('[data-hud="turn"]');
   const exploredEl = hud.querySelector('[data-hud="explored"]');
+  const hpEl = hud.querySelector('[data-hud="hp"]');
+  const killsEl = hud.querySelector('[data-hud="kills"]');
+  const hpBarFill = hud.querySelector('[data-hud="hp-bar"]');
 
   if (seedEl) seedEl.textContent = String(state.seed);
   if (posEl) posEl.textContent = `${state.player.x}, ${state.player.y}`;
@@ -129,6 +203,37 @@ export function updateHud(hud, state) {
   if (exploredEl) {
     exploredEl.textContent = String(countExplored(state.visibility));
   }
+  if (hpEl) {
+    hpEl.textContent = `${state.player.hp}/${state.player.maxHp}`;
+  }
+  if (killsEl) killsEl.textContent = String(state.kills ?? 0);
+  if (hpBarFill instanceof HTMLElement) {
+    const ratio =
+      state.player.maxHp > 0
+        ? Math.max(0, Math.min(1, state.player.hp / state.player.maxHp))
+        : 0;
+    hpBarFill.style.width = `${Math.round(ratio * 100)}%`;
+    hpBarFill.style.background =
+      ratio > 0.35 ? COLORS.hpFull : COLORS.hpLow;
+  }
+}
+
+/**
+ * @param {HTMLElement} logEl
+ * @param {import('./game-state.js').GameState} state
+ */
+export function updateLog(logEl, state) {
+  const messages = state.messages ?? [];
+  // Show newest last (reading order top→bottom).
+  logEl.innerHTML = '';
+  const recent = messages.slice(-12);
+  for (const msg of recent) {
+    const line = document.createElement('div');
+    line.className = 'log-line';
+    line.textContent = msg;
+    logEl.appendChild(line);
+  }
+  logEl.scrollTop = logEl.scrollHeight;
 }
 
 /**

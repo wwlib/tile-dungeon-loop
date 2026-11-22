@@ -67,6 +67,7 @@ test('open room sees tiles within radius', () => {
 
 test('fog of war: explored memory persists after leaving sight', () => {
   const state = createGame(100, { width: 31, height: 21, fovRadius: 5 });
+  state.monsters = []; // keep pathing free of combat side-effects
   const startVis = getVis(state, state.player.x, state.player.y);
   assert.equal(startVis, VIS.VISIBLE);
 

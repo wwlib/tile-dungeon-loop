@@ -14,6 +14,8 @@
       --accent: #f6e05e;
       --btn: #21262d;
       --btn-hover: #30363d;
+      --hp: #48bb78;
+      --hp-bg: #21262d;
     }
     * { box-sizing: border-box; }
     body {
@@ -53,6 +55,25 @@
     #hud .stat span.label { color: var(--muted); }
     #hud .stat span.value { color: var(--text); font-weight: 600; }
     #hud .controls { color: var(--muted); width: 100%; font-size: 11px; }
+    .hp-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .hp-bar {
+      width: 88px;
+      height: 8px;
+      background: var(--hp-bg);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .hp-bar > span {
+      display: block;
+      height: 100%;
+      width: 100%;
+      background: var(--hp);
+    }
     .actions { display: flex; gap: 8px; margin-left: auto; }
     button {
       background: var(--btn);
@@ -71,22 +92,44 @@
       image-rendering: pixelated;
       max-width: 100%;
     }
+    #message-log {
+      max-width: 800px;
+      width: 100%;
+      height: 110px;
+      overflow-y: auto;
+      padding: 8px 12px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    #message-log .log-line { color: var(--text); }
+    #message-log .log-line:last-child { color: var(--accent); }
   </style>
 </head>
 <body>
   <h1>Tile Dungeon</h1>
   <div id="hud">
     <div class="stat"><span class="label">seed</span> <span class="value" data-hud="seed">—</span></div>
+    <div class="stat hp-wrap">
+      <span class="label">hp</span>
+      <span class="value" data-hud="hp">—</span>
+      <div class="hp-bar" title="Player HP"><span data-hud="hp-bar"></span></div>
+    </div>
     <div class="stat"><span class="label">pos</span> <span class="value" data-hud="pos">—</span></div>
     <div class="stat"><span class="label">turn</span> <span class="value" data-hud="turn">—</span></div>
+    <div class="stat"><span class="label">kills</span> <span class="value" data-hud="kills">—</span></div>
     <div class="stat"><span class="label">explored</span> <span class="value" data-hud="explored">—</span></div>
     <div class="actions">
       <button type="button" id="restart" title="Restart same seed">Restart</button>
       <button type="button" id="new-seed" title="New random seed">New Seed</button>
     </div>
-    <div class="controls">Move: Arrow keys / WASD · Wait: Space · Restart: R · New seed: N · Stairs: blue &gt;</div>
+    <div class="controls">Move: Arrow keys / WASD · Wait: Space · Bump to attack · Restart: R / Enter · New seed: N</div>
   </div>
   <canvas id="game" width="800" height="600"></canvas>
+  <div id="message-log" aria-live="polite" aria-label="Message log"></div>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

@@ -71,6 +71,7 @@ test('createGame places player on walkable tile and exposes inspect helpers', ()
 
 test('player moves in all four cardinal directions', () => {
   const state = createGame(1, { width: 21, height: 15 });
+  state.monsters = [];
   const ox = 5;
   const oy = 5;
   for (let dy = -1; dy <= 1; dy++) {
@@ -105,6 +106,7 @@ test('player moves in all four cardinal directions', () => {
 
 test('wall collision blocks movement; turn still advances', () => {
   const state = createGame(1);
+  state.monsters = [];
   state.tiles[5 * state.width + 1] = TILE.FLOOR;
   state.player.x = 1;
   state.player.y = 5;
@@ -134,6 +136,7 @@ test('wall collision blocks movement; turn still advances', () => {
 
 test('bounds safety: out-of-bounds moves do not escape the map', () => {
   const state = createGame(1, { width: 9, height: 7 });
+  state.monsters = [];
   state.tiles[1 * state.width + 1] = TILE.FLOOR;
   state.player.x = 1;
   state.player.y = 1;
@@ -147,6 +150,7 @@ test('bounds safety: out-of-bounds moves do not escape the map', () => {
 
 test('step(move) and step(wait) drive the same rules', () => {
   const state = createGame(1, { width: 11, height: 9 });
+  state.monsters = [];
   const ox = 3;
   const oy = 3;
   for (let dy = -1; dy <= 1; dy++) {

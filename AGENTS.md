@@ -18,7 +18,7 @@ Guidance for AI coding agents working on `tile-dungeon`.
 - **Project registration:** `.agentfleet.json` sets `"project": "tile-dungeon"`. Note that `aflt <subcmd> --help` is not a dedicated help path in `aflt` — never invoke it.
 - Keep `README.md` and `AGENTS.md` updated as milestones land.
 
-## Current Modules (M2)
+## Current Modules (M3)
 
 | Module | Role |
 | --- | --- |
@@ -27,19 +27,21 @@ Guidance for AI coding agents working on `tile-dungeon`.
 | `src/map.js` | Arena builder with outer walls + interior pillars |
 | `src/dungeon.js` | Seeded rooms+corridors gen — spawn, stairs, corridors, connectivity repair / BFS analysis |
 | `src/fov.js` | Recursive shadowcasting FOV, fog apply/update, explored count, Bresenham LOS |
-| `src/game-state.js` | Pure `createGame` / `movePlayer` / `step` / `inspect`; dungeon + FOV |
-| `src/renderer.js` | Canvas draw with unseen/explored/visible shading + stairs + HUD |
-| `src/main.js` | Browser entry (Arrow/WASD, Space, R, N) |
+| `src/monsters.js` | Archetypes, seeded spawn away from player room, chase / wander AI |
+| `src/game-state.js` | Pure `createGame` / `movePlayer` / `step` / `restart` / `inspect`; FOV + combat + HP + log + death |
+| `src/renderer.js` | Canvas draw: FOV shading, visible monsters + HP bars, Game Over overlay, HUD / log |
+| `src/main.js` | Browser entry (Arrow/WASD, Space, R/Enter, N) |
 | `test/rng.test.js` | Seed determinism |
 | `test/game-state.test.js` | Movement, collision, bounds, DOM-free import |
 | `test/dungeon.test.js` | Determinism + 50-seed spawn/stairs/connectivity/solvability |
 | `test/fov.test.js` | Wall occlusion, fog memory, createGame FOV init |
+| `test/combat.test.js` | Monster spawn, bump combat, AI chase, message log, death, restart |
 | `test/smoke.test.js` | Static server `/health` + `/` |
 
 ## Milestones
 
 1. **M1:** ✅ Grid tile map, canvas rendering, keyboard movement, wall collision, seeded RNG, pure state module, headless tests.
 2. **M2:** ✅ Seeded procedural dungeon generation (rooms+corridors or BSP), FOV + fog of war, multi-seed connectivity/solvability tests.
-3. **M3:** Monsters with AI, turn-based combat, HP, message log, death and restart, headless tests.
+3. **M3:** ✅ Monsters with AI, turn-based combat, HP, message log, death and restart, headless tests.
 4. **M4:** Potions, weapons/armor, inventory, stairs to deeper levels, difficulty scaling, headless tests.
 5. **M5:** `scripts/eval/` headless bot + scorer (crash-free, solvability, average depth, turns survived, balance sanity) + iterative balance/gameplay improvement loop.
