@@ -34,7 +34,7 @@ const DEFAULT_HEIGHT = 31;
 const DEFAULT_FOV_RADIUS = 8;
 const DEFAULT_PLAYER_MAX_HP = 20;
 const DEFAULT_PLAYER_ATTACK = 3;
-const DEFAULT_PLAYER_DEFENSE = 0;
+const DEFAULT_PLAYER_DEFENSE = 1;
 const MESSAGE_LOG_LIMIT = 40;
 
 /** Exported aliases used by headless tests. */

@@ -53,7 +53,7 @@ Cursor cost is null in `aflt` usage summaries; token totals above are from those
 - **M3** — Monsters, turn-based combat, HP, message log, death and restart.
 - **M4** — Items, inventory, stairs to deeper levels, difficulty scaling.
 - **M5a** — Headless bot and eval harness (crash-free, solvability, average depth, turns survived, balance sanity).
-- **Improve** — Depth-aware spawn tables: floor 1 spawns slime/bat/goblin only (no orcs); orcs from depth 2; heavier packs deeper. Keeps early floors beatable with base ATK/DEF.
+- **Improve** — Depth-aware spawn tables (no orcs on floor 1), denser floor loot, and player base DEF 1 so weak hits glance and early orc trades are survivable longer.
 
 ## License
 

@@ -57,4 +57,4 @@ Guidance for AI coding agents working on `tile-dungeon`.
 3. **M3:** ✅ Monsters with AI, turn-based combat, HP, message log, death and restart, headless tests.
 4. **M4:** ✅ Potions, weapons/armor, inventory, stairs to deeper levels, difficulty scaling, headless tests.
 5. **M5:** ✅ M5a — `scripts/eval/` headless bot + scorer (crash-free, solvability, average depth, turns survived, balance sanity); remaining — iterative balance/gameplay improvement loop.
-6. **Improve:** Depth-aware monster spawn tables — depth 1 is slime/bat/goblin only; orcs from depth 2; heavier orc weight from depth 3+.
+6. **Improve:** Depth-aware monster spawn tables — depth 1 is slime/bat/goblin only; orcs from depth 2; heavier orc weight from depth 3+. Higher item spawn density. Player base DEF 1 so atk-1 foes glance and orc bursts are less lethal on early floors.

@@ -12,6 +12,8 @@ import {
   TILE,
   isWalkable,
   MESSAGE_LOG_LIMIT,
+  PLAYER_BASE_DEFENSE,
+  PLAYER_BASE_ATTACK,
 } from '../src/game-state.js';
 import {
   ARCHETYPES,
@@ -195,6 +197,24 @@ test('calcDamage never goes negative; equal stats miss', () => {
   assert.equal(calcDamage({ attack: 3 }, { defense: 1 }), 2);
   assert.equal(calcDamage({ attack: 2 }, { defense: 2 }), 0);
   assert.equal(calcDamage({ attack: 1 }, { defense: 5 }), 0);
+});
+
+test('player starts with base DEF 1 so weak hits glance and orcs hit softer', () => {
+  assert.equal(PLAYER_BASE_DEFENSE, 1);
+  const state = createGame(11);
+  assert.equal(state.player.defense, PLAYER_BASE_DEFENSE);
+  assert.equal(state.player.attack, PLAYER_BASE_ATTACK);
+
+  // Slimes / bats (atk 1) glance off bare defense; goblins still chip for 1.
+  assert.equal(calcDamage({ attack: 1 }, state.player), 0);
+  assert.equal(calcDamage({ attack: 2 }, state.player), 1);
+  // Depth-2 orc (atk 4) deals 3 instead of 4 — the main early-death softener.
+  assert.equal(calcDamage({ attack: 4 }, state.player), 3);
+  assert.equal(
+    calcDamage({ attack: 4 }, { defense: 0 }),
+    4,
+    'without base DEF, orcs still deal full 4',
+  );
 });
 
 test('monster AI chases when within aggro and is blocked by walls/monsters', () => {
