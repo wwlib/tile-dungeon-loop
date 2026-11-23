@@ -1,7 +1,11 @@
 {
   "previous": 92.4,
   "after": 92.4,
+  "measuredBy": "improve-gate",
+  "beforeSource": "gate-pre-measure",
+  "afterSource": "gate-post-measure",
   "result": "plateau",
   "keep_changes": false,
-  "stop": true
+  "stop": true,
+  "overall": 92.4
 }
