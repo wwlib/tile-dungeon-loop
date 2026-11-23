@@ -23,19 +23,20 @@ The package.json `eval` script is `node scripts/eval/eval.js --json`.
 
 ## Comparison with the flat-run baseline
 
-The original game (`tile-dungeon`) was built as eight separate `aflt run` sessions orchestrated outside the loop runner. This repo used `aflt loop` instead. Criteria were wall time, tokens, and quality.
+The original game (`tile-dungeon`) was built as eight separate `aflt run` sessions orchestrated outside the loop runner. This repo used `aflt loop` instead. Criteria were wall time, tokens, and quality. Numbers below were **recomputed 2026-11-23** after usage backfill, dropping 200,482 failed 8:18 PM planner tokens, and repairing r2’s sparse estimate (still `accuracy=estimated`; Cursor never reported exact API usage for that turn). Cost stays **null / unknown**.
 
-| | Flat-run baseline | This loop rebuild |
+| | Flat-run baseline | Loop path (first `hello-aflt` + fair `hello-aflt-improve`) |
 |---|---|---|
-| Wall time | 1h 19m 6s | **18m 51s** |
-| Tokens | 8,936,876 | **3,752,022** (3,422,067 without the planner) |
-| Improve rounds kept | 3 (score 89.7 → 97.2) | **0 kept** (1 attempted) |
-| Final live eval | **97.2** | **88.2** |
-| Tests | 72 pass / 0 fail | 66 pass / 0 fail |
+| Wall time | 1h 19m 6s | **58m 50s** (18m 53s + 39m 57s) |
+| Tokens (with planner) | n/a | **5,996,177** (first 4,232,189 + improve 1,763,988) |
+| Tokens (without planner) | **8,936,876** | **5,322,759** |
+| Improve rounds kept | 3 (flat path) | **3 kept** (88.2 → 92.4 → 94.1 → **96.8**) |
+| Fresh-eval overall | **97.2** (weakest `turns_survived` 81.1) | **96.8** (weakest `avg_depth` 84.3) |
+| Tests (`node --test test/*.test.js`) | **72** pass / 0 fail | **68** pass / 0 fail |
 
-This is **not a like-for-like quality comparison**. The loop ran only one improvement round. That round briefly reached **92.4**, then a comparison-harness bug treated it as a plateau (the worker had already written 92.4 to `eval/history.jsonl`, so the gate compared 92.4 to 92.4), reverted the gameplay changes, and stopped. A fresh eval of this tree scores **88.2**, the M5a baseline. The scorers share the same metric names, weights, and constants but are separate rewrites, so scores are similar rather than strictly identical.
+**Test-count note:** a naive `\btest\s*\(` grep on this repo’s `test/` hits **73** because **5** lines are RegExp `.test(` calls, not `node:test` cases. The runner reports **68**.
 
-Cursor cost is null in `aflt` usage summaries; token totals above are from those summaries and are partly `accuracy=partial`.
+First-loop M5a baseline was **88.2**; one early improve briefly reached **92.4** then a false-plateau gate reverted gameplay. The fair `--fresh` improve later kept three rounds through **96.8** (`f420cfc` / `e31b8ea` / `6deab49`). Full write-up: `/tmp/aflt-dungeon-loop/comparison.md` on the build host.
 
 ## Architecture
 
