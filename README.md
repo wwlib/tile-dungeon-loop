@@ -41,7 +41,7 @@ Cursor cost is null in `aflt` usage summaries; token totals above are from those
 
 - `server.js` — minimal Node HTTP static server (`0.0.0.0`, default port 8792) serving `public/`, `src/`, and `/health`.
 - `public/index.html` — canvas + HUD entry.
-- `src/` — ES modules shared by the browser and Node tests. Game rules stay pure (no DOM) in modules such as `rng.js`, `game-state.js`, `dungeon.js`, `fov.js`, `monsters.js`, and `items.js`. `renderer.js` and `main.js` handle canvas and input.
+- `src/` — ES modules shared by the browser and Node tests. Game rules stay pure (no DOM) in modules such as `rng.js`, `game-state.js`, `dungeon.js`, `fov.js`, `monsters.js` (depth-gated spawn tables via `spawnTableForDepth`), and `items.js`. `renderer.js` and `main.js` handle canvas and input.
 - `scripts/eval/` — headless bot (`bot.js`), scorer (`scorer.js`), and CLI (`eval.js`).
 - `test/` — headless `node:test` suites.
 - `.agentfleet.json` — registers the `aflt` project as `tile-dungeon-loop`.
@@ -53,7 +53,7 @@ Cursor cost is null in `aflt` usage summaries; token totals above are from those
 - **M3** — Monsters, turn-based combat, HP, message log, death and restart.
 - **M4** — Items, inventory, stairs to deeper levels, difficulty scaling.
 - **M5a** — Headless bot and eval harness (crash-free, solvability, average depth, turns survived, balance sanity).
-- **Improve rounds** — Planned by `aflt loop` `plan-next`. One round ran and was reverted as described above.
+- **Improve** — Depth-aware spawn tables: floor 1 spawns slime/bat/goblin only (no orcs); orcs from depth 2; heavier packs deeper. Keeps early floors beatable with base ATK/DEF.
 
 ## License
 

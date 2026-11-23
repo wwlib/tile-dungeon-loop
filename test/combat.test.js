@@ -17,6 +17,7 @@ import {
   ARCHETYPES,
   createMonster,
   spawnMonsters,
+  spawnTableForDepth,
   monsterAt,
   chooseChaseStep,
   canMonsterOccupy,
@@ -99,6 +100,33 @@ test('spawnMonsters is deterministic given the same rng stream', () => {
     ma.map((m) => ({ k: m.kind, x: m.x, y: m.y })),
     mb.map((m) => ({ k: m.kind, x: m.x, y: m.y })),
   );
+});
+
+test('depth 1 spawn table excludes orcs; orcs appear from depth 2+', () => {
+  assert.equal(spawnTableForDepth(1).includes('orc'), false);
+  assert.ok(spawnTableForDepth(1).includes('goblin'));
+  assert.ok(spawnTableForDepth(1).includes('slime'));
+  assert.ok(spawnTableForDepth(2).includes('orc'));
+  assert.ok(spawnTableForDepth(3).includes('orc'));
+
+  for (const seed of [1, 2, 3, 7, 10, 13, 18, 42, 99, 1234]) {
+    const d1 = createGame(seed);
+    assert.ok(
+      d1.monsters.every((m) => m.kind !== 'orc'),
+      `depth-1 orc on seed ${seed}`,
+    );
+  }
+
+  // Depth 2+ must be able to spawn orcs across a multi-seed sweep.
+  let sawOrc = false;
+  for (let seed = 1; seed <= 40; seed++) {
+    const deep = createGame(seed, { depth: 2 });
+    if (deep.monsters.some((m) => m.kind === 'orc')) {
+      sawOrc = true;
+      break;
+    }
+  }
+  assert.equal(sawOrc, true, 'expected at least one depth-2 orc across seeds');
 });
 
 test('bumping a monster attacks instead of moving; HP drops; death removes it', () => {

@@ -85,6 +85,21 @@ export const ARCHETYPES = Object.freeze({
   }),
 });
 
+/**
+ * Depth 1: slime / bat / goblin only — orcs (atk 4) overwhelm base 20 HP / 3 ATK
+ * and cause many early deaths before the bot can loot or descend.
+ */
+const SHALLOW_SPAWN_TABLE = Object.freeze([
+  'slime',
+  'slime',
+  'bat',
+  'bat',
+  'goblin',
+  'goblin',
+  'goblin',
+]);
+
+/** Depth 2: orcs appear among weaker foes. */
 const SPAWN_TABLE = Object.freeze([
   'slime',
   'slime',
@@ -95,7 +110,7 @@ const SPAWN_TABLE = Object.freeze([
   'orc',
 ]);
 
-/** Depth-weighted table: bats/slimes fade; goblins/orcs grow. */
+/** Depth 3+: bats/slimes fade; goblins/orcs grow. */
 const DEEP_SPAWN_TABLE = Object.freeze([
   'bat',
   'slime',
@@ -105,6 +120,18 @@ const DEEP_SPAWN_TABLE = Object.freeze([
   'orc',
   'orc',
 ]);
+
+/**
+ * Spawn-kind table for a depth (exported for tests / tuning inspection).
+ * @param {number} depth
+ * @returns {readonly string[]}
+ */
+export function spawnTableForDepth(depth) {
+  const d = Math.max(1, Math.floor(Number(depth) || 1));
+  if (d <= 1) return SHALLOW_SPAWN_TABLE;
+  if (d >= 3) return DEEP_SPAWN_TABLE;
+  return SPAWN_TABLE;
+}
 
 const CARDINAL = Object.freeze([
   [0, -1],
@@ -205,7 +232,7 @@ export function spawnMonsters(state, options = {}) {
     `${state.stairs.x},${state.stairs.y}`,
   ]);
 
-  const table = depth >= 3 ? DEEP_SPAWN_TABLE : SPAWN_TABLE;
+  const table = spawnTableForDepth(depth);
   const rooms = state.rooms ?? [];
   // Skip rooms[0] — player spawn room.
   for (let ri = 1; ri < rooms.length; ri++) {

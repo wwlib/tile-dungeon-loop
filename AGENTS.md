@@ -27,7 +27,7 @@ Guidance for AI coding agents working on `tile-dungeon`.
 | `src/map.js` | Arena builder with outer walls + interior pillars |
 | `src/dungeon.js` | Seeded rooms+corridors gen — spawn, stairs, corridors, connectivity repair / BFS analysis |
 | `src/fov.js` | Recursive shadowcasting FOV, fog apply/update, explored count, Bresenham LOS |
-| `src/monsters.js` | Archetypes, depth-scaled spawn density / stats, chase / wander AI |
+| `src/monsters.js` | Archetypes, depth-scaled spawn tables / density / stats (`spawnTableForDepth`: no orcs on depth 1), chase / wander AI |
 | `src/items.js` | Potion / weapon / armor templates; `spawnItems`; `floorSeed`; inventory helpers |
 | `src/game-state.js` | Pure `createGame` / `movePlayer` / `useItem` / `descendStairs` / `restart` / `inspect`; FOV + combat + inventory + depth |
 | `src/renderer.js` | Canvas draw: FOV shading, items, visible monsters + HP bars, Game Over overlay, HUD / inventory / log |
@@ -57,3 +57,4 @@ Guidance for AI coding agents working on `tile-dungeon`.
 3. **M3:** ✅ Monsters with AI, turn-based combat, HP, message log, death and restart, headless tests.
 4. **M4:** ✅ Potions, weapons/armor, inventory, stairs to deeper levels, difficulty scaling, headless tests.
 5. **M5:** ✅ M5a — `scripts/eval/` headless bot + scorer (crash-free, solvability, average depth, turns survived, balance sanity); remaining — iterative balance/gameplay improvement loop.
+6. **Improve:** Depth-aware monster spawn tables — depth 1 is slime/bat/goblin only; orcs from depth 2; heavier orc weight from depth 3+.
