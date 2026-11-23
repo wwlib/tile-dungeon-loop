@@ -1,11 +1,11 @@
 {
-  "previous": 88.2,
-  "after": 92.4,
+  "previous": 92.4,
+  "after": 94.1,
   "measuredBy": "improve-gate",
   "beforeSource": "committed-head",
   "afterSource": "working-tree",
   "result": "improved",
   "keep_changes": true,
   "stop": false,
-  "overall": 92.4
+  "overall": 94.1
 }

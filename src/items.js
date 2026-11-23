@@ -250,7 +250,7 @@ export function pickTemplate(rng, depth) {
  */
 export function spawnItems(rng, dungeon, playerPos, depth = 1, occupied = new Set(), options = {}) {
   const d = Math.max(1, Math.floor(Number(depth) || 1));
-  const density = options.density ?? Math.min(0.55, 0.32 + d * 0.04);
+  const density = options.density ?? Math.min(0.7, 0.45 + d * 0.05);
   const maxPerRoom = options.maxPerRoom ?? (d >= 4 ? 2 : 1);
 
   /** @type {Item[]} */
